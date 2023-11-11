@@ -174,7 +174,7 @@ namespace InputXmlFile
                         bulkCopy.WriteToServer(data);
                     }
 
-                    // Обновление и вставка данных в основную таблицу с использованием оператора MERGE
+                    // Обновление и вставка данных в основную таблицу 
                     string mergeQuery = @"
                 MERGE INTO Clients AS target
                 USING " + tempTableName + @" AS source

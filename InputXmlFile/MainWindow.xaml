@@ -7,8 +7,13 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="600" Width="800">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <Button Content="Импортировать XML" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20" Click="ImportButton_Click"/>
-        <DataGrid x:Name="dataGridView" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,70,0,0" Width="760" Height="500" IsReadOnly="False"/>
+        <DataGrid x:Name="dataGridView" Grid.Row="1" IsReadOnly="False"/>
         <Button Content="Сохранить изменения" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="150,20,0,0" Click="SaveButton_Click"/>
     </Grid>
 </Window>
