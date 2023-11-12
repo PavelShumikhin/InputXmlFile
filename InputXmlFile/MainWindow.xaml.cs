@@ -75,7 +75,6 @@ namespace InputXmlFile
                             newRow["CARDCODE"] = row["CARDCODE"];                           
                             string startDateString = row["STARTDATE"].ToString();
                             DateTime startDate;
-                            // Проверяем пустое значение для "STARTDATE"
                             if (string.IsNullOrEmpty(startDateString) || !DateTime.TryParse(startDateString, out startDate))
                             {
                                 newRow["STARTDATE"] = DBNull.Value; 
@@ -86,7 +85,6 @@ namespace InputXmlFile
                             }
                             string finishDateString = row["FINISHDATE"].ToString();
                             DateTime finishDate;
-                            // Проверяем пустое значение для "FINISHDATE"
                             if (string.IsNullOrEmpty(finishDateString) || !DateTime.TryParse(finishDateString, out finishDate))
                             {
                                 newRow["FINISHDATE"] = DBNull.Value;
@@ -101,8 +99,7 @@ namespace InputXmlFile
                             newRow["SURNAME"] = row["SURNAME"];
                             newRow["GENDERID"] = row["GENDERID"];
                             string birthdayString = row["BIRTHDAY"].ToString();
-                            DateTime birthday;
-                            // Проверяем пустое значение для "BIRTHDAY"
+                            DateTime birthday;                           
                             if (string.IsNullOrEmpty(birthdayString) || !DateTime.TryParse(birthdayString, out birthday))
                             {
                                 newRow["BIRTHDAY"] = DBNull.Value;
