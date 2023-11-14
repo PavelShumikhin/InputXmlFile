@@ -43,7 +43,6 @@ namespace InputXmlFile
                 string xmlFilePath = openFileDialog.FileName;
                 try
                 {
-                    // Загрузка данных XML в список объектов вашего типа
                     XmlSerializer formatter = new XmlSerializer(typeof(List<Card>));
                     using (FileStream file = new FileStream(xmlFilePath, FileMode.Open))
                     {
