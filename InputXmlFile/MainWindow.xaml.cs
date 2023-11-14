@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,17 +18,18 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Serialization;
 
 namespace InputXmlFile
 {
     public partial class MainWindow : Window
     {
         //Строка подключения к БД
-        private string connectionString = "Data Source=Shuma\\MSSQLSERVER02;Initial Catalog=Test;Integrated Security=True";
-        private DataTable data;
+        private ApplicationDbContext dbContext;       
         public MainWindow()
         {
             InitializeComponent();
+            dbContext = new ApplicationDbContext();
         }
 
         private void ImportButton_Click(object sender, RoutedEventArgs e)
@@ -40,95 +43,24 @@ namespace InputXmlFile
                 string xmlFilePath = openFileDialog.FileName;
                 try
                 {
-                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    // Загрузка данных XML в список объектов вашего типа
+                    XmlSerializer formatter = new XmlSerializer(typeof(List<Card>));
+                    using (FileStream file = new FileStream(xmlFilePath, FileMode.Open))
                     {
-                        connection.Open();
-                        // Таблицу для хранения импортированных данных
-                        data = new DataTable();
-                        data.Columns.Add("CARDCODE", typeof(string));
-                        data.Columns.Add("STARTDATE", typeof(DateTime));
-                        data.Columns.Add("FINISHDATE", typeof(DateTime));
-                        data.Columns.Add("LASTNAME", typeof(string));
-                        data.Columns.Add("FIRSTNAME", typeof(string));
-                        data.Columns.Add("SURNAME", typeof(string));
-                        data.Columns.Add("GENDERID", typeof(string));
-                        data.Columns.Add("BIRTHDAY", typeof(DateTime));
-                        data.Columns.Add("PHONEHOME", typeof(string));
-                        data.Columns.Add("PHONEMOBIL", typeof(string));
-                        data.Columns.Add("EMAIL", typeof(string));
-                        data.Columns.Add("CITY", typeof(string));
-                        data.Columns.Add("STREET", typeof(string));
-                        data.Columns.Add("HOUSE", typeof(string));
-                        data.Columns.Add("APARTMENT", typeof(string));
-
-                        // Загружаем XML файл в DataSet
-                        DataSet dataSet = new DataSet();
-                        dataSet.ReadXml(xmlFilePath);
-
-                        // Получаем таблицу с данными из DataSet
-                        DataTable xmlData = dataSet.Tables[0];
-
-                        // Копируем данные из таблицы XML в таблицу данных
-                        foreach (DataRow row in xmlData.Rows)
+                        List<Card> cards = (List<Card>)formatter.Deserialize(file);
+                        if (cards != null && cards.Count > 0)
                         {
-                            DataRow newRow = data.NewRow();
-                            newRow["CARDCODE"] = row["CARDCODE"];                           
-                            string startDateString = row["STARTDATE"].ToString();
-                            DateTime startDate;
-                            if (string.IsNullOrEmpty(startDateString) || !DateTime.TryParse(startDateString, out startDate))
-                            {
-                                newRow["STARTDATE"] = DBNull.Value; 
-                            }
-                            else
-                            {
-                                newRow["STARTDATE"] = startDate;
-                            }
-                            string finishDateString = row["FINISHDATE"].ToString();
-                            DateTime finishDate;
-                            if (string.IsNullOrEmpty(finishDateString) || !DateTime.TryParse(finishDateString, out finishDate))
-                            {
-                                newRow["FINISHDATE"] = DBNull.Value;
-                            }
-                            else
-                            {
-                                newRow["FINISHDATE"] = finishDate;
-                            }
-
-                            newRow["LASTNAME"] = row["LASTNAME"];
-                            newRow["FIRSTNAME"] = row["FIRSTNAME"];
-                            newRow["SURNAME"] = row["SURNAME"];
-                            newRow["GENDERID"] = row["GENDERID"];
-                            string birthdayString = row["BIRTHDAY"].ToString();
-                            DateTime birthday;                           
-                            if (string.IsNullOrEmpty(birthdayString) || !DateTime.TryParse(birthdayString, out birthday))
-                            {
-                                newRow["BIRTHDAY"] = DBNull.Value;
-                            }
-                            else
-                            {
-                                newRow["BIRTHDAY"] = birthday;
-                            }
-                            newRow["PHONEHOME"] = row["PHONEHOME"];
-                            newRow["PHONEMOBIL"] = row["PHONEMOBIL"];
-                            newRow["EMAIL"] = row["EMAIL"];
-                            newRow["CITY"] = row["CITY"];
-                            newRow["STREET"] = row["STREET"];
-                            newRow["HOUSE"] = row["HOUSE"];
-                            newRow["APARTMENT"] = row["APARTMENT"];    
-
-                            data.Rows.Add(newRow);
+                            MessageBox.Show("Данные успешно импортированы.");
                         }
-
-                        // Отображаем данные в DataGrid
-                        dataGridView.ItemsSource = data.DefaultView;
-
-                        MessageBox.Show("Данные успешно импортированы в базу данных.");
-
+                        dataGridView.DataContext = cards;
                     }
+                    
+
+                    
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Ошибка импорта данных: " + ex.Message);
+                    MessageBox.Show("Ошибка при импорте данных: " + ex.Message);
                 }
             }
         }
@@ -137,85 +69,33 @@ namespace InputXmlFile
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                // Добавление или обновление сущностей в базе данных
+                foreach (Card client in dataGridView.ItemsSource)
                 {
-                    connection.Open();
+                    var existingClient = dbContext.Clients.Find(client.CARDCODE);
 
-                    // Создание временной таблицы
-                    string tempTableName = "#TempClients";
-                    string createTempTableQuery = @"
-                CREATE TABLE " + tempTableName + @" (
-                    CARDCODE VARCHAR(50),
-                    STARTDATE DATE,
-                    FINISHDATE DATE,
-                    LASTNAME NVARCHAR(50),
-                    FIRSTNAME NVARCHAR(50),
-                    SURNAME NVARCHAR(50),
-                    GENDERID NVARCHAR(1),
-                    BIRTHDAY DATE,
-                    PHONEHOME NVARCHAR(50),
-                    PHONEMOBIL NVARCHAR(50),
-                    EMAIL NVARCHAR(50),
-                    CITY NVARCHAR(50),
-                    STREET NVARCHAR(50),
-                    HOUSE NVARCHAR(10),
-                    APARTMENT NVARCHAR(10)
-                )";
-                    SqlCommand createTempTableCommand = new SqlCommand(createTempTableQuery, connection);
-                    createTempTableCommand.ExecuteNonQuery();
-
-                    // Загрузка данных из файла XML во временную таблицу
-                    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection))
+                    if (existingClient != null)
                     {
-                        bulkCopy.DestinationTableName = tempTableName;
-                        bulkCopy.WriteToServer(data);
+                        // Обновление существующего клиента
+                        dbContext.Entry(existingClient).CurrentValues.SetValues(client);
                     }
-
-                    // Обновление и вставка данных в основную таблицу 
-                    string mergeQuery = @"
-                MERGE INTO Clients AS target
-                USING " + tempTableName + @" AS source
-                ON (target.CARDCODE = source.CARDCODE)
-                WHEN MATCHED THEN
-                    UPDATE SET
-                        target.STARTDATE = source.STARTDATE,
-                        target.FINISHDATE = source.FINISHDATE,
-                        target.LASTNAME = source.LASTNAME,
-                        target.FIRSTNAME = source.FIRSTNAME,
-                        target.SURNAME = source.SURNAME,
-                        target.GENDERID = source.GENDERID,
-                        target.BIRTHDAY = source.BIRTHDAY,
-                        target.PHONEHOME = source.PHONEHOME,
-                        target.PHONEMOBIL = source.PHONEMOBIL,
-                        target.EMAIL = source.EMAIL,
-                        target.CITY = source.CITY,
-                        target.STREET = source.STREET,
-                        target.HOUSE = source.HOUSE,
-                        target.APARTMENT = source.APARTMENT
-                WHEN NOT MATCHED BY TARGET THEN
-                    INSERT (CARDCODE, STARTDATE, FINISHDATE, LASTNAME, FIRSTNAME, SURNAME, GENDERID, BIRTHDAY, PHONEHOME, PHONEMOBIL, EMAIL, CITY, STREET, HOUSE, APARTMENT)
-                    VALUES (source.CARDCODE, source.STARTDATE, source.FINISHDATE, source.LASTNAME, source.FIRSTNAME, source.SURNAME, source.GENDERID, source.BIRTHDAY, source.PHONEHOME, source.PHONEMOBIL, source.EMAIL, source.CITY, source.STREET, source.HOUSE, source.APARTMENT)
-                WHEN NOT MATCHED BY SOURCE THEN
-                    DELETE;";
-                    SqlCommand mergeCommand = new SqlCommand(mergeQuery, connection);
-                    mergeCommand.ExecuteNonQuery();
-
-                    // Удаление временной таблицы
-                    string dropTempTableQuery = "DROP TABLE " + tempTableName;
-                    SqlCommand dropTempTableCommand = new SqlCommand(dropTempTableQuery, connection);
-                    dropTempTableCommand.ExecuteNonQuery();
-
-                    MessageBox.Show("Изменения сохранены успешно!", "Сохранение", MessageBoxButton.OK, MessageBoxImage.Information);
+                    else
+                    {
+                        // Добавление нового клиента
+                        dbContext.Clients.Add(client);
+                    }
                 }
+
+                dbContext.SaveChanges();
+
+                MessageBox.Show("Изменения успешно сохранены!", "Сохранение", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Ошибка при сохранении данных: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        
-        }
 
-        
+        }
 
     }
 }

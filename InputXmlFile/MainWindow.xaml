@@ -13,7 +13,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Button Content="Импортировать XML" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20" Click="ImportButton_Click"/>
-        <DataGrid x:Name="dataGridView" Grid.Row="1" IsReadOnly="False"/>
+        <DataGrid x:Name="dataGridView" ItemsSource="{Binding}" Grid.Row="1" IsReadOnly="False"/>
         <Button Content="Сохранить изменения" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="150,20,0,0" Click="SaveButton_Click"/>
     </Grid>
 </Window>
